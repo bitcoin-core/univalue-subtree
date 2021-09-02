@@ -6,6 +6,23 @@
 #ifndef __UNIVALUE_H__
 #define __UNIVALUE_H__
 
+// Legacy code that uses UniValue typically makes countless copies of UniValue
+// objects. These copies are often unnecessary and costly. To help with
+// converting legacy code into more efficient std::move friendly code, add
+//
+// #define WITH_UNIVALUE_COPY_OPERATIONS 0
+//
+// to the file that you want to convert. This will disable all UniValue methods that
+// cause copying of elements, causing compile errors. Each of these compile
+// errors can then be fixed with e.g. std::move(), or if a copy is still
+// necessary by explicitly calling the .copy() method. Unfortunately it cannot
+// detect all cases, as a copy constructor is still necessary for collections.
+// You can disable copy operations globally.
+
+#ifndef WITH_UNIVALUE_COPY_OPERATIONS
+#define WITH_UNIVALUE_COPY_OPERATIONS 1
+#endif
+
 #include <cstdint>
 #include <cstring>
 #include <map>
@@ -16,11 +33,32 @@ class UniValue {
 public:
     enum VType { VNULL, VOBJ, VARR, VSTR, VNUM, VBOOL, };
 
-    UniValue() { typ = VNULL; }
-    UniValue(UniValue::VType initialType, const std::string& initialStr = "") {
-        typ = initialType;
-        val = initialStr;
+    UniValue() = default;
+
+#if WITH_UNIVALUE_COPY_OPERATIONS
+    UniValue(const UniValue&) = default;
+    UniValue& operator=(const UniValue&) = default;
+#else
+    // explicit copy constructor and deleted copy assignment forces the use of .copy() in most cases.
+    explicit UniValue(const UniValue&) = default;
+    UniValue& operator=(const UniValue&) = delete;
+#endif
+
+    UniValue(UniValue&&) = default;
+    UniValue& operator=(UniValue&&) = default;
+    ~UniValue() = default;
+
+    // adds an explicit copy() operation that also works even when WITH_UNIVALUE_COPY_OPERATIONS is defined as 0.
+    UniValue copy() const {
+        return UniValue{*this};
     }
+
+    UniValue(UniValue::VType initialType) : typ(initialType) {}
+    UniValue(UniValue::VType initialType, const std::string& initialStr) : typ(initialType), val(initialStr) {}
+    UniValue(UniValue::VType initialType, std::string&& initialStr) : typ(initialType), val(std::move(initialStr)) {}
+    UniValue(const std::string& val_) : typ(VSTR), val(val_) {}
+    UniValue(std::string&& val_) : typ(VSTR), val(std::move(val_)) {}
+    UniValue(const char *val_) : typ(VSTR), val(val_) {}
     UniValue(uint64_t val_) {
         setInt(val_);
     }
@@ -36,24 +74,19 @@ public:
     UniValue(double val_) {
         setFloat(val_);
     }
-    UniValue(const std::string& val_) {
-        setStr(val_);
-    }
-    UniValue(const char *val_) {
-        std::string s(val_);
-        setStr(s);
-    }
 
     void clear();
 
     bool setNull();
     bool setBool(bool val);
     bool setNumStr(const std::string& val);
+    bool setNumStr(std::string&& val);
     bool setInt(uint64_t val);
     bool setInt(int64_t val);
     bool setInt(int val_) { return setInt((int64_t)val_); }
     bool setFloat(double val);
     bool setStr(const std::string& val);
+    bool setStr(std::string&& val);
     bool setArray();
     bool setObject();
 
@@ -79,68 +112,56 @@ public:
     bool isArray() const { return (typ == VARR); }
     bool isObject() const { return (typ == VOBJ); }
 
+#if WITH_UNIVALUE_COPY_OPERATIONS
     bool push_back(const UniValue& val);
-    bool push_back(const std::string& val_) {
-        UniValue tmpVal(VSTR, val_);
-        return push_back(tmpVal);
-    }
-    bool push_back(const char *val_) {
-        std::string s(val_);
-        return push_back(s);
-    }
-    bool push_back(uint64_t val_) {
-        UniValue tmpVal(val_);
-        return push_back(tmpVal);
-    }
-    bool push_back(int64_t val_) {
-        UniValue tmpVal(val_);
-        return push_back(tmpVal);
-    }
-    bool push_back(bool val_) {
-        UniValue tmpVal(val_);
-        return push_back(tmpVal);
-    }
-    bool push_back(int val_) {
-        UniValue tmpVal(val_);
-        return push_back(tmpVal);
-    }
-    bool push_back(double val_) {
-        UniValue tmpVal(val_);
-        return push_back(tmpVal);
-    }
+#endif
+    bool push_back(UniValue&& val);
+    bool push_back(const std::string& val_);
+    bool push_back(std::string&& val_);
+    bool push_back(const char *val_);
+    bool push_back(uint64_t val_);
+    bool push_back(int64_t val_);
+    bool push_back(bool val_);
+    bool push_back(int val_);
+    bool push_back(double val_);
+#if WITH_UNIVALUE_COPY_OPERATIONS
     bool push_backV(const std::vector<UniValue>& vec);
+#endif
+    bool push_backV(std::vector<UniValue>&& vec);
 
+#if WITH_UNIVALUE_COPY_OPERATIONS
     void __pushKV(const std::string& key, const UniValue& val);
+    void __pushKV(std::string&& key, const UniValue& val);
+#endif
+    void __pushKV(const std::string& key, UniValue&& val);
+    void __pushKV(std::string&& key, UniValue&& val);
+
+#if WITH_UNIVALUE_COPY_OPERATIONS
     bool pushKV(const std::string& key, const UniValue& val);
-    bool pushKV(const std::string& key, const std::string& val_) {
-        UniValue tmpVal(VSTR, val_);
-        return pushKV(key, tmpVal);
-    }
-    bool pushKV(const std::string& key, const char *val_) {
-        std::string _val(val_);
-        return pushKV(key, _val);
-    }
-    bool pushKV(const std::string& key, int64_t val_) {
-        UniValue tmpVal(val_);
-        return pushKV(key, tmpVal);
-    }
-    bool pushKV(const std::string& key, uint64_t val_) {
-        UniValue tmpVal(val_);
-        return pushKV(key, tmpVal);
-    }
-    bool pushKV(const std::string& key, bool val_) {
-        UniValue tmpVal(val_);
-        return pushKV(key, tmpVal);
-    }
-    bool pushKV(const std::string& key, int val_) {
-        UniValue tmpVal((int64_t)val_);
-        return pushKV(key, tmpVal);
-    }
-    bool pushKV(const std::string& key, double val_) {
-        UniValue tmpVal(val_);
-        return pushKV(key, tmpVal);
-    }
+    bool pushKV(std::string&& key, const UniValue& val);
+#endif
+    bool pushKV(const std::string& key, UniValue&& val);
+    bool pushKV(std::string&& key, UniValue&& val);
+    bool pushKV(const std::string& key, const std::string& val);
+    bool pushKV(std::string&& key, const std::string& val);
+    bool pushKV(const std::string& key, std::string&& val);
+    bool pushKV(std::string&& key, std::string&& val);
+    bool pushKV(const std::string& key, const char *val);
+    bool pushKV(std::string&& key, const char *val);
+    bool pushKV(const std::string& key, int64_t val);
+    bool pushKV(std::string&& key, int64_t val);
+    bool pushKV(const std::string& key, uint64_t val);
+    bool pushKV(std::string&& key, uint64_t val);
+    bool pushKV(const std::string& key, bool val);
+    bool pushKV(std::string&& key, bool val);
+    bool pushKV(const std::string& key, int val);
+    bool pushKV(std::string&& key, int val);
+    bool pushKV(const std::string& key, double val);
+    bool pushKV(std::string&& key, double val);
+#if WITH_UNIVALUE_COPY_OPERATIONS
     bool pushKVs(const UniValue& obj);
+#endif
+    bool pushKVs(UniValue&& obj);
 
     std::string write(unsigned int prettyIndent = 0,
                       unsigned int indentLevel = 0) const;
@@ -152,7 +173,13 @@ public:
     }
 
 private:
-    UniValue::VType typ;
+    template<typename V>
+    bool pushBackGeneric(V&& val_);
+
+    template <typename K, typename V>
+    bool pushKVGeneric(K&& key, V&& val_);
+
+    UniValue::VType typ{VNULL};
     std::string val;                       // numbers are stored as C++ strings
     std::vector<std::string> keys;
     std::vector<UniValue> values;
