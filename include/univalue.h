@@ -59,21 +59,11 @@ public:
     UniValue(const std::string& val_) : typ(VSTR), val(val_) {}
     UniValue(std::string&& val_) : typ(VSTR), val(std::move(val_)) {}
     UniValue(const char *val_) : typ(VSTR), val(val_) {}
-    UniValue(uint64_t val_) {
-        setInt(val_);
-    }
-    UniValue(int64_t val_) {
-        setInt(val_);
-    }
-    UniValue(bool val_) {
-        setBool(val_);
-    }
-    UniValue(int val_) {
-        setInt(val_);
-    }
-    UniValue(double val_) {
-        setFloat(val_);
-    }
+    UniValue(uint64_t val_);
+    UniValue(int64_t val_);
+    UniValue(bool val_);
+    UniValue(int val_);
+    UniValue(double val_);
 
     void clear();
 

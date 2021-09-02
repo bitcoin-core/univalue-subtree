@@ -42,6 +42,32 @@ void appendNumToString(T n, std::string& str)
 
 }
 
+UniValue::UniValue(uint64_t val_) : typ(VNUM)
+{
+    appendNumToString(val_, val);
+}
+
+UniValue::UniValue(int64_t val_) : typ(VNUM)
+{
+    appendNumToString(val_, val);
+}
+
+UniValue::UniValue(bool val_) : typ(VBOOL)
+{
+    if (val_)
+        val = "1";
+}
+
+UniValue::UniValue(int val_) : typ(VNUM)
+{
+    appendNumToString(val_, val);
+}
+
+UniValue::UniValue(double val_) : typ(VNUM)
+{
+    setFloat(val_);
+}
+
 void UniValue::clear()
 {
     typ = VNULL;
