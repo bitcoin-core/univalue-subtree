@@ -150,15 +150,15 @@ BOOST_AUTO_TEST_CASE(univalue_set)
     BOOST_CHECK(v.isNum());
     BOOST_CHECK_EQUAL(v.getValStr(), "-1.01");
 
-    BOOST_CHECK(v.setInt((int)1023));
+    BOOST_CHECK(v.setInt(static_cast<int>(1023)));
     BOOST_CHECK(v.isNum());
     BOOST_CHECK_EQUAL(v.getValStr(), "1023");
 
-    BOOST_CHECK(v.setInt((int64_t)-1023LL));
+    BOOST_CHECK(v.setInt(static_cast<int64_t>(-1023LL)));
     BOOST_CHECK(v.isNum());
     BOOST_CHECK_EQUAL(v.getValStr(), "-1023");
 
-    BOOST_CHECK(v.setInt((uint64_t)1023ULL));
+    BOOST_CHECK(v.setInt(static_cast<uint64_t>(1023ULL)));
     BOOST_CHECK(v.isNum());
     BOOST_CHECK_EQUAL(v.getValStr(), "1023");
 
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(univalue_array)
 {
     UniValue arr(UniValue::VARR);
 
-    UniValue v((int64_t)1023LL);
+    UniValue v(static_cast<int64_t>(1023LL));
     BOOST_CHECK(arr.push_back(v));
 
     std::string vStr("zippy");
@@ -206,9 +206,9 @@ BOOST_AUTO_TEST_CASE(univalue_array)
 
     BOOST_CHECK(arr.push_backV(vec));
 
-    BOOST_CHECK(arr.push_back((uint64_t) 400ULL));
-    BOOST_CHECK(arr.push_back((int64_t) -400LL));
-    BOOST_CHECK(arr.push_back((int) -401));
+    BOOST_CHECK(arr.push_back(static_cast<uint64_t>(400ULL)));
+    BOOST_CHECK(arr.push_back(static_cast<int64_t>(-400LL)));
+    BOOST_CHECK(arr.push_back(static_cast<int>(-401)));
     BOOST_CHECK(arr.push_back(-40.1));
     BOOST_CHECK(arr.push_back(true));
 
@@ -262,16 +262,16 @@ BOOST_AUTO_TEST_CASE(univalue_object)
     BOOST_CHECK(obj.pushKV(strKey, cVal));
 
     strKey = "distance";
-    BOOST_CHECK(obj.pushKV(strKey, (int64_t) 25));
+    BOOST_CHECK(obj.pushKV(strKey, static_cast<int64_t>(25)));
 
     strKey = "time";
-    BOOST_CHECK(obj.pushKV(strKey, (uint64_t) 3600));
+    BOOST_CHECK(obj.pushKV(strKey, static_cast<uint64_t>(3600)));
 
     strKey = "calories";
-    BOOST_CHECK(obj.pushKV(strKey, (int) 12));
+    BOOST_CHECK(obj.pushKV(strKey, static_cast<int>(12)));
 
     strKey = "temperature";
-    BOOST_CHECK(obj.pushKV(strKey, (double) 90.012));
+    BOOST_CHECK(obj.pushKV(strKey, static_cast<double>(90.012)));
 
     strKey = "moon";
     BOOST_CHECK(obj.pushKV(strKey, true));
